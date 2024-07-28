@@ -6,7 +6,7 @@ function RefrshHandler({ setIsAuthenticated }) {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (localStorage.getItem('token')) {
+        if (localStorage.getItem('jwtToken')) {
             setIsAuthenticated(true);
             if (location.pathname === '/' ||
                 location.pathname === '/LogInPage' ||
