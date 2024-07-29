@@ -32,26 +32,39 @@ const Navbar = ({ categories }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userId");
+    try {
+      // Remove tokens and user-related data from localStorage
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("jwtToken");
+      localStorage.removeItem("loggedInUser");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userId");
   
-    showNotification("User Logged out");
+      console.log("Logged out successfully. Tokens and user data removed from localStorage.");
   
-    setLoggedInUser("");
-    setUserRole("");
-    setShowProfileDropdown(false);
+      // Display logout notification
+      showNotification("User Logged out");
   
-    window.dispatchEvent(new Event("storage"));
+      // Reset user state in the application
+      setLoggedInUser("");
+      setUserRole("");
+      setShowProfileDropdown(false);
   
-    setTimeout(() => {
-      navigate("/Home");
-    }, 1000);
+      // Trigger storage event to synchronize logout across tabs
+      window.dispatchEvent(new Event("storage"));
+  
+      // Navigate to the home page after a delay
+      setTimeout(() => {
+        navigate("/Home");
+      }, 1000);
+    } catch (error) {
+      console.error("Error during logout:", error);
+      showNotification("An error occurred during logout.");
+    }
   };
+  
   
   const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
