@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { productContext } from "../utills/Context";
-import Navbar from "./Navbar";
 
 const Details = () => {
   const [products, setProducts] = useContext(productContext);
@@ -17,10 +16,30 @@ const Details = () => {
   });
   const { id } = useParams();
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("userRole");
-  const userId = localStorage.getItem("userId");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch("http://localhost:8080/api/user/role", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.role);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -33,8 +52,14 @@ const Details = () => {
       setLoading(true);
       setError(null);
       try {
+        const token = localStorage.getItem('jwtToken');
         const response = await fetch(
-          `https://project-cse-2200.vercel.app/api/products/${id}`
+          `http://localhost:8080/api/products/${id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
         );
         if (!response.ok) {
           const errorData = await response.json();
@@ -55,16 +80,18 @@ const Details = () => {
 
   const ProductDeleteHandler = async () => {
     try {
+      const token = localStorage.getItem('jwtToken');
       const response = await fetch(
-        `https://project-cse-2200.vercel.app/api/products/${id}`,
+        `http://localhost:8080/api/products/${id}`,
         {
           method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
       );
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Response Status:", response.status);
-        console.error("Response Text:", errorData.message);
         throw new Error(errorData.message || "Failed to delete product");
       }
       const updatedProducts = products.filter((p) => p._id !== id);
@@ -86,12 +113,14 @@ const Details = () => {
       image: editProduct.image,
     };
     try {
+      const token = localStorage.getItem('jwtToken');
       const response = await fetch(
-        `https://project-cse-2200.vercel.app/api/products/${id}`,
+        `http://localhost:8080/api/products/${id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(updatedProduct),
         }
@@ -112,48 +141,46 @@ const Details = () => {
   };
   
   const handleAddToCart = async () => {
-    const userId = localStorage.getItem('userId');
-    const userRole = localStorage.getItem('userRole');
-  
-    if (!userId) {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
       navigate("/LogInPage");
       return;
     }
   
-    if (userRole !== "user") {
-      alert("Only users can add items to cart");
-      return;
-    }
-  
     try {
+      // Assuming the userId is stored in localStorage or can be derived from the token
+      const userId = localStorage.getItem('userId'); // Replace this with your method of obtaining the userId
+  
       const response = await fetch(
-        `https://project-cse-2200.vercel.app/api/cart/add`,
+        "http://localhost:8080/api/cart/add",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            userId,  // This should be the string version of the MongoDB _id
-            productId: id,  // This should be the MongoDB _id of the product
+            userId,  // Include the userId here
+            productId: id,
             quantity,
           }),
         }
       );
   
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to add item to cart");
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
   
       const result = await response.json();
-      alert(result.message);
-      navigate('/CartPage');
+      alert("Item added to cart successfully");
+      navigate('/CartPage'); // Navigate to the CartPage after successful addition
     } catch (error) {
       console.error("Error adding product to cart:", error);
-      alert("Failed to add product to cart: " + error.message);
+      setError(`Failed to add product to cart: ${error.message}`);
     }
   };
+  
+  
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -190,126 +217,59 @@ const Details = () => {
               {isEditing ? (
                 <form onSubmit={ProductEditHandler} className="space-y-4">
                   <div className="mb-4">
-                    <label
-                      htmlFor="title"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Title
-                    </label>
+                    <label htmlFor="title" className="block text-sm font-bold text-gray-700">Title</label>
                     <input
                       type="text"
                       id="title"
                       value={editProduct.title}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          title: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditProduct({...editProduct, title: e.target.value})}
                       className="w-full p-2 border rounded"
-                      placeholder="Title"
                     />
                   </div>
-
                   <div className="mb-4">
-                    <label
-                      htmlFor="category"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Category
-                    </label>
+                    <label htmlFor="category" className="block text-sm font-bold text-gray-700">Category</label>
                     <input
                       type="text"
                       id="category"
                       value={editProduct.category}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          category: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditProduct({...editProduct, category: e.target.value})}
                       className="w-full p-2 border rounded"
-                      placeholder="Category"
                     />
                   </div>
-
                   <div className="mb-4">
-                    <label
-                      htmlFor="price"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Price
-                    </label>
+                    <label htmlFor="price" className="block text-sm font-bold text-gray-700">Price</label>
                     <input
                       type="number"
                       id="price"
                       value={editProduct.price}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          price: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditProduct({...editProduct, price: e.target.value})}
                       className="w-full p-2 border rounded"
-                      placeholder="Price"
                     />
                   </div>
-
                   <div className="mb-4">
-                    <label
-                      htmlFor="description"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Description
-                    </label>
+                    <label htmlFor="description" className="block text-sm font-bold text-gray-700">Description</label>
                     <textarea
                       id="description"
                       value={editProduct.description}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          description: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditProduct({...editProduct, description: e.target.value})}
                       className="w-full p-2 border rounded"
-                      placeholder="Description"
                     />
                   </div>
-
                   <div className="mb-4">
-                    <label
-                      htmlFor="image"
-                      className="block text-sm font-bold text-gray-700"
-                    >
-                      Image URL
-                    </label>
+                    <label htmlFor="image" className="block text-sm font-bold text-gray-700">Image URL</label>
                     <input
                       type="text"
                       id="image"
                       value={editProduct.image}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          image: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setEditProduct({...editProduct, image: e.target.value})}
                       className="w-full p-2 border rounded"
-                      placeholder="Image URL"
                     />
                   </div>
-
                   <div className="flex space-x-4">
-                    <button
-                      type="submit"
-                      className="rounded bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 w-full md:w-auto"
-                    >
+                    <button type="submit" className="rounded bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4">
                       Save
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="rounded bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 w-full md:w-auto"
-                    >
+                    <button type="button" onClick={() => setIsEditing(false)} className="rounded bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4">
                       Cancel
                     </button>
                   </div>

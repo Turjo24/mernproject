@@ -11,6 +11,7 @@ const products = require("./Routes/products");
 const cartRoutes = require('./Routes/cartRoutes');
 const AdminRouter = require('./Routes/AdminRouter');
 const OrderRoutes = require('./Routes/OrderRoutes');
+const UserRouter = require('./Routes/UserRouter');
 
 
 
@@ -27,10 +28,12 @@ app.use(bodyParser.json()); // Parse application/json requests
 app.use("/auth", AuthRouter);
 
 // Products routes
+app.use("/api/user", UserRouter);
 app.use("/api/products", products);
 app.use('/api/cart', cartRoutes);
 app.use('/api/admin',  AdminRouter);
 app.use('/api/orders', OrderRoutes); 
+
 // Error handling middleware (must be placed after all routes/middleware)
 app.use((err, req, res, next) => {
   console.error("Error:", err);
