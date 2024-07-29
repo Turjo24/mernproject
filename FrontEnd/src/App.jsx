@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -26,7 +27,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
 
   const PrivateRoute = ({ element }) => {
-    return isAuthenticated ? element : <Navigate to="/" />
+    return isAuthenticated ? element : <Navigate to="/LogInPage" />
   }
 
   useEffect(() => {
@@ -81,15 +82,15 @@ export default function App() {
     <div className="h-screen w-screen flex flex-col">
       <RefrshHandler setIsAuthenticated={setIsAuthenticated} />
       <TokenRefresher />
-      <Navbar categories={categories} />
+      <Navbar categories={categories} isAuthenticated={isAuthenticated} />
       <Routes>
-        <Route path="/" element={<Home categories={categories} />} />
-        <Route path="/Home" element={<PrivateRoute element={<Home categories={categories} />} />} />
-        <Route path="/category/:category" element={<PrivateRoute element={<Home categories={categories} />} />} />
-        <Route path="/LogInPage" element={<LogInPage />} />
+        <Route path="/" element={<Home categories={categories} isAuthenticated={isAuthenticated} />} />
+        <Route path="/Home" element={<PrivateRoute element={<Home categories={categories} isAuthenticated={isAuthenticated} />} />} />
+        <Route path="/category/:category" element={<PrivateRoute element={<Home categories={categories} isAuthenticated={isAuthenticated} />} />} />
+        <Route path="/LogInPage" element={<LogInPage setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/RegisterPage" element={<RegisterPage />} />
         <Route path="/create" element={<PrivateRoute element={<Create addCategory={addCategory} />} />} />
-        <Route path="/details/:id" element={<PrivateRoute element={<Details />} />} />
+        <Route path="/details/:id" element={<Details />} />
         <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
         <Route path="/cartPage" element={<PrivateRoute element={<CartPage />} />} />
         <Route path="/AllUsers" element={<PrivateRoute element={<AllUsers />} />} />
