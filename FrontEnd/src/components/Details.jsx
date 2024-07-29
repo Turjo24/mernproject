@@ -24,7 +24,7 @@ const Details = () => {
     const fetchUserRole = async () => {
       try {
         const token = localStorage.getItem('jwtToken');
-        const response = await fetch("http://localhost:8080/api/user/role", {
+        const response = await fetch("https://project-cse-2200.vercel.app/api/user/role", {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -54,7 +54,7 @@ const Details = () => {
       try {
         const token = localStorage.getItem('jwtToken');
         const response = await fetch(
-          `http://localhost:8080/api/products/${id}`,
+          `https://project-cse-2200.vercel.app/api/products/${id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -82,7 +82,7 @@ const Details = () => {
     try {
       const token = localStorage.getItem('jwtToken');
       const response = await fetch(
-        `http://localhost:8080/api/products/${id}`,
+        `https://project-cse-2200.vercel.app/api/products/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -115,7 +115,7 @@ const Details = () => {
     try {
       const token = localStorage.getItem('jwtToken');
       const response = await fetch(
-        `http://localhost:8080/api/products/${id}`,
+        `https://project-cse-2200.vercel.app/api/products/${id}`,
         {
           method: "PUT",
           headers: {
@@ -152,7 +152,7 @@ const Details = () => {
       const userId = localStorage.getItem('userId'); // Replace this with your method of obtaining the userId
   
       const response = await fetch(
-        "http://localhost:8080/api/cart/add",
+        "https://project-cse-2200.vercel.app/api/cart/add",
         {
           method: "POST",
           headers: {
