@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { productContext } from "../utills/Context";
-import { ThreeDots } from 'react-loader-spinner';
+import { ThreeDots } from "react-loader-spinner";
 
 const Details = () => {
   const [products, setProducts] = useContext(productContext);
@@ -24,12 +24,15 @@ const Details = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
-        const response = await fetch("https://project-cse-2200-xi.vercel.app/api/user/role", {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        const token = localStorage.getItem("jwtToken");
+        const response = await fetch(
+          "https://project-cse-2200-xi.vercel.app/api/user/role",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-        });
+        );
         if (response.ok) {
           const data = await response.json();
           setUserRole(data.role);
@@ -53,13 +56,13 @@ const Details = () => {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('jwtToken');
+        const token = localStorage.getItem("jwtToken");
         const response = await fetch(
           `https://project-cse-2200-xi.vercel.app/api/products/${id}`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
         if (!response.ok) {
@@ -81,14 +84,14 @@ const Details = () => {
 
   const ProductDeleteHandler = async () => {
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = localStorage.getItem("jwtToken");
       const response = await fetch(
         `https://project-cse-2200-xi.vercel.app/api/products/${id}`,
         {
           method: "DELETE",
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       if (!response.ok) {
@@ -114,14 +117,14 @@ const Details = () => {
       image: editProduct.image,
     };
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = localStorage.getItem("jwtToken");
       const response = await fetch(
         `https://project-cse-2200-xi.vercel.app/api/products/${id}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(updatedProduct),
         }
@@ -140,54 +143,55 @@ const Details = () => {
       alert("Failed to update product: " + error.message);
     }
   };
-  
+
   const handleAddToCart = async () => {
-    const token = localStorage.getItem('jwtToken');
+    const token = localStorage.getItem("jwtToken");
     if (!token) {
       navigate("/LogInPage");
       return;
     }
-  
+
     try {
-      const userId = localStorage.getItem('userId');
-  
+      const userId = localStorage.getItem("userId");
+
       const response = await fetch(
         "https://project-cse-2200-xi.vercel.app/api/cart/add",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             userId,
             productId: id,
+            image: product.image,
             quantity,
           }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const result = await response.json();
       alert("Item added to cart successfully");
-      navigate('/CartPage');
+      navigate("/CartPage");
     } catch (error) {
       console.error("Error adding product to cart:", error);
       setError(`Failed to add product to cart: ${error.message}`);
     }
   };
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <ThreeDots 
-          height="80" 
-          width="80" 
+        <ThreeDots
+          height="80"
+          width="80"
           radius="9"
-          color="#4fa94d" 
+          color="#4fa94d"
           ariaLabel="three-dots-loading"
           visible={true}
         />
@@ -227,59 +231,116 @@ const Details = () => {
               {isEditing ? (
                 <form onSubmit={ProductEditHandler} className="space-y-4">
                   <div className="mb-4">
-                    <label htmlFor="title" className="block text-sm font-bold text-gray-700">Title</label>
+                    <label
+                      htmlFor="title"
+                      className="block text-sm font-bold text-gray-700"
+                    >
+                      Title
+                    </label>
                     <input
                       type="text"
                       id="title"
                       value={editProduct.title}
-                      onChange={(e) => setEditProduct({...editProduct, title: e.target.value})}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          title: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border rounded"
                     />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="category" className="block text-sm font-bold text-gray-700">Category</label>
+                    <label
+                      htmlFor="category"
+                      className="block text-sm font-bold text-gray-700"
+                    >
+                      Category
+                    </label>
                     <input
                       type="text"
                       id="category"
                       value={editProduct.category}
-                      onChange={(e) => setEditProduct({...editProduct, category: e.target.value})}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          category: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border rounded"
                     />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="price" className="block text-sm font-bold text-gray-700">Price</label>
+                    <label
+                      htmlFor="price"
+                      className="block text-sm font-bold text-gray-700"
+                    >
+                      Price
+                    </label>
                     <input
                       type="number"
                       id="price"
                       value={editProduct.price}
-                      onChange={(e) => setEditProduct({...editProduct, price: e.target.value})}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          price: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border rounded"
                     />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="description" className="block text-sm font-bold text-gray-700">Description</label>
+                    <label
+                      htmlFor="description"
+                      className="block text-sm font-bold text-gray-700"
+                    >
+                      Description
+                    </label>
                     <textarea
                       id="description"
                       value={editProduct.description}
-                      onChange={(e) => setEditProduct({...editProduct, description: e.target.value})}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border rounded"
                     />
                   </div>
                   <div className="mb-4">
-                    <label htmlFor="image" className="block text-sm font-bold text-gray-700">Image URL</label>
+                    <label
+                      htmlFor="image"
+                      className="block text-sm font-bold text-gray-700"
+                    >
+                      Image URL
+                    </label>
                     <input
                       type="text"
                       id="image"
                       value={editProduct.image}
-                      onChange={(e) => setEditProduct({...editProduct, image: e.target.value})}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          image: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border rounded"
                     />
                   </div>
                   <div className="flex space-x-4">
-                    <button type="submit" className="rounded bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4">
+                    <button
+                      type="submit"
+                      className="rounded bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4"
+                    >
                       Save
                     </button>
-                    <button type="button" onClick={() => setIsEditing(false)} className="rounded bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="rounded bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4"
+                    >
                       Cancel
                     </button>
                   </div>
