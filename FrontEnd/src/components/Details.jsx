@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { productContext } from "../utills/Context";
+import { ThreeDots } from 'react-loader-spinner';
 
 const Details = () => {
   const [products, setProducts] = useContext(productContext);
@@ -148,8 +149,7 @@ const Details = () => {
     }
   
     try {
-      // Assuming the userId is stored in localStorage or can be derived from the token
-      const userId = localStorage.getItem('userId'); // Replace this with your method of obtaining the userId
+      const userId = localStorage.getItem('userId');
   
       const response = await fetch(
         "https://project-cse-2200-xi.vercel.app/api/cart/add",
@@ -160,7 +160,7 @@ const Details = () => {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            userId,  // Include the userId here
+            userId,
             productId: id,
             quantity,
           }),
@@ -173,16 +173,26 @@ const Details = () => {
   
       const result = await response.json();
       alert("Item added to cart successfully");
-      navigate('/CartPage'); // Navigate to the CartPage after successful addition
+      navigate('/CartPage');
     } catch (error) {
       console.error("Error adding product to cart:", error);
       setError(`Failed to add product to cart: ${error.message}`);
     }
   };
   
-  
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <ThreeDots 
+          height="80" 
+          width="80" 
+          radius="9"
+          color="#4fa94d" 
+          ariaLabel="three-dots-loading"
+          visible={true}
+        />
+      </div>
+    );
   }
 
   if (error) {
