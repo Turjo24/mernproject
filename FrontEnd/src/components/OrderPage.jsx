@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { ThreeDots } from 'react-loader-spinner';
 
 const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const userId = localStorage.getItem('userId');
+  const lastSeenOrderId = localStorage.getItem('lastSeenOrderId');
 
   useEffect(() => {
     fetchOrders();
@@ -17,6 +19,10 @@ const OrderPage = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
       });
       setOrders(response.data.orders);
+      if (response.data.orders.length > 0) {
+        const latestOrderId = response.data.orders[0]._id;
+        localStorage.setItem('lastSeenOrderId', latestOrderId);
+      }
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError(error.response?.data?.message || 'An error occurred while fetching orders.');
@@ -25,27 +31,65 @@ const OrderPage = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <ThreeDots color="#00BFFF" height={80} width={80} />
+    </div>
+  );
+
+  if (error) return <div className="text-red-500 text-center text-lg mt-5">Error: {error}</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Your Orders</h1>
+    <div className="max-w-4xl mx-auto p-5">
+      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Your Orders</h2>
       {orders.length === 0 ? (
-        <p>You have no orders yet.</p>
+        <p className="text-center text-gray-600 text-lg">You have no orders yet.</p>
       ) : (
         orders.map((order) => (
-          <div key={order._id} className="border p-4 mb-4">
-            <p>Order ID: {order._id}</p>
-            <p>Total Amount: ${order.totalAmount.toFixed(2)}</p>
-            <p>Payment Method: {order.paymentMethod}</p>
-            <p>Status: {order.status}</p>
-            <h3 className="font-semibold mt-2">Products:</h3>
-            {order.products.map((product) => (
-              <div key={product._id} className="ml-4">
-                <p>{product.productId.title} - Quantity: {product.quantity}, Price: ${product.price.toFixed(2)}</p>
+          <div
+            key={order._id}
+            className={`mb-6 bg-white rounded-lg shadow-md overflow-hidden border-l-4 ${
+              order.status === 'Paid'
+                ? 'border-green-500'
+                : 'border-red-500'
+            } ${
+              lastSeenOrderId && order._id === lastSeenOrderId
+                ? 'border-yellow-500'
+                : ''
+            }`}
+          >
+            <div className="p-4 bg-gray-50 flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Order ID: {order._id}</h3>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  order.status === 'Paid'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {order.status}
+              </span>
+            </div>
+            <div className="p-4">
+              <p className="mb-2">Total Amount: ${order.totalAmount.toFixed(2)}</p>
+              <p className="mb-4">Payment Method: {order.paymentMethod}</p>
+              <h4 className="font-semibold mb-2">Products:</h4>
+              <div className="space-y-2">
+                {order.products.map((product, index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded">
+                    {product.productId ? (
+                      <p>
+                        {product.productId.title} - Quantity: {product.quantity}, Price: ${product.price.toFixed(2)}
+                      </p>
+                    ) : (
+                      <p className="text-gray-500">
+                        Product no longer available - Quantity: {product.quantity}, Price: ${product.price.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         ))
       )}
