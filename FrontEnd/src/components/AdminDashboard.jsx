@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { ThreeDots } from "react-loader-spinner";
 
 const AdminDashboard = () => {
   const [adminData, setAdminData] = useState(null);
@@ -17,11 +18,14 @@ const AdminDashboard = () => {
       }
 
       try {
-        const response = await axios.get("https://project-cse-2200-xi.vercel.app/api/admin/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          "https://project-cse-2200-xi.vercel.app/api/admin/profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.data.success) {
           setAdminData(response.data.admin);
@@ -39,9 +43,12 @@ const AdminDashboard = () => {
     fetchAdminData();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <ThreeDots color="#00BFFF" height={80} width={80} />
+      </div>
+    );
 
   if (error) {
     return <div className="text-red-600">{error}</div>;
@@ -54,7 +61,7 @@ const AdminDashboard = () => {
   return (
     <div className="max-w-400px mx-auto h-900px p-4">
       <h1 className="text-2xl md:text-3xl font-bold mb-4">Admin Dashboard</h1>
-      <div className="shadow rounded-md p-4">
+      <div className="shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md p-4">
         <div className="mt-4">
           <p>
             <strong>Name:</strong>{" "}

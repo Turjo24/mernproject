@@ -173,20 +173,19 @@ const Navbar = ({
                   <Link to="/Dashboard" className={dropdownItemStyle}>
                     Dashboard
                   </Link>
-                  {userRole === "admin" ? (
+                  {/* {userRole === "admin" ? (
                     <Link to="/create" className={dropdownItemStyle}>
                       Add New Product
                     </Link>
                   ) : (
                     <>
-                      <Link to="/CartPage" className={dropdownItemStyle}>
-                        My Cart
-                      </Link>
-                      <Link to="/your-orders" className={dropdownItemStyle}>
-                        Your Orders
-                      </Link>
+                      <Link to="/CartPage" className={dropdownItemStyle}></Link>
+                      <Link
+                        to="/your-orders"
+                        className={dropdownItemStyle}
+                      ></Link>
                     </>
-                  )}
+                  )} */}
                   <button onClick={handleLogout} className={dropdownItemStyle}>
                     Logout
                   </button>

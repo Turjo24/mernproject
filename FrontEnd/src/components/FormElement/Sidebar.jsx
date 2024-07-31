@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaUser, FaShoppingCart, FaCreditCard, FaBox, FaUsers, FaClipboardList, FaSignOutAlt } from 'react-icons/fa';
+import {
+  FaUser,
+  FaShoppingCart,
+  FaCreditCard,
+  FaBox,
+  FaUsers,
+  FaClipboardList,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -42,24 +50,52 @@ const Sidebar = () => {
   );
 
   return (
-    <div className="w-64 h-screen bg-white shadow-lg">
+    <div className="w-64 h-screen shadow-lg">
       <div className="flex flex-col h-full">
         <div className="p-5">
           <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
         </div>
-        <nav className="flex-grow">
-          <NavItem to="/Dashboard" icon={<FaUser className="w-5 h-5" />}>My Profile</NavItem>
+        <nav className="flex-grow overflow-auto">
+          <NavItem to="/Dashboard" icon={<FaUser className="w-5 h-5" />}>
+            My Profile
+          </NavItem>
           {userRole === "admin" && (
             <>
-              <NavItem to="/Create" icon={<FaBox className="w-5 h-5" />}>Add New Product</NavItem>
-              <NavItem to="/AllUsers" icon={<FaUsers className="w-5 h-5" />}>All User Details</NavItem>
-              <NavItem to="/AdminOrderPage" icon={<FaClipboardList className="w-5 h-5" />}>Admin Order Page</NavItem>
+              <NavItem to="/Create" icon={<FaBox className="w-5 h-5" />}>
+                Add New Product
+              </NavItem>
+              <NavItem to="/AllUsers" icon={<FaUsers className="w-5 h-5" />}>
+                All User Details
+              </NavItem>
+              <NavItem
+                to="/AdminOrderPage"
+                icon={<FaClipboardList className="w-5 h-5" />}
+              >
+                Admin Order Page
+              </NavItem>
             </>
           )}
           {userRole === "user" && (
             <>
-              <NavItem to="/CartPage" icon={<FaShoppingCart className="w-5 h-5" />}>My Cart</NavItem>
-              <NavItem to="/payment" icon={<FaCreditCard className="w-5 h-5" />}>Payment</NavItem>
+              <NavItem
+                to="/CartPage"
+                icon={<FaShoppingCart className="w-5 h-5" />}
+              >
+                My Cart
+              </NavItem>
+              <NavItem
+                to="/your-orders"
+                icon={<FaClipboardList className="w-5 h-5" />}
+              >
+                {" "}
+                Your Order
+              </NavItem>
+              <NavItem
+                to="/payment"
+                icon={<FaCreditCard className="w-5 h-5" />}
+              >
+                Payment
+              </NavItem>
             </>
           )}
         </nav>

@@ -54,13 +54,13 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col w-full h-screen">
         <div className="flex flex-grow overflow-hidden">
-          <div className="w-1/5 min-w-[200px]">
+          <div className=" min-w-[200px]">
             <Sidebar />
           </div>
-          <div className="w-3/5 overflow-y-auto p-4">
-            <div className="max-w-2xl mx-auto">
+          <div className="w-2/3 p-4 mx-auto">
+            <div className="max-w-2xl ">
               {userRole === "admin" ? (
                 <AdminDashboard
                   loggedInUser={loggedInUser}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "./FormElement/Sidebar";
+import { ThreeDots } from "react-loader-spinner";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -39,7 +41,8 @@ const CartPage = () => {
     }
   };
 
-  const updateQuantity = async (productId, newQuantity) => {
+  const updateQuantity = async (e, productId, newQuantity) => {
+    e.preventDefault();
     try {
       const response = await fetch(
         `https://project-cse-2200.vercel.app/api/cart/update`,
@@ -54,14 +57,21 @@ const CartPage = () => {
       if (!response.ok) {
         throw new Error("Failed to update quantity");
       }
-      await fetchCartItems();
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
     } catch (error) {
       console.error("Error updating quantity:", error);
       setError(error.message);
     }
   };
 
-  const removeItem = async (productId) => {
+  const removeItem = async (e, productId) => {
+    e.preventDefault();
     try {
       const response = await fetch(
         `https://project-cse-2200.vercel.app/api/cart/remove`,
@@ -76,79 +86,102 @@ const CartPage = () => {
       if (!response.ok) {
         throw new Error("Failed to remove item");
       }
-      await fetchCartItems();
+      setCartItems((prevItems) =>
+        prevItems.filter((item) => item.productId !== productId)
+      );
     } catch (error) {
       console.error("Error removing item:", error);
       setError(error.message);
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e) => {
+    e.preventDefault();
     navigate("/payment");
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <ThreeDots color="#00BFFF" height={80} width={80} />
+      </div>
+    );
+
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Your Cart</h1>
-      {cartItems.length === 0 ? (
-        <p>Your cart is empty.</p>
-      ) : (
-        <div>
-          {cartItems.map((item) => (
-            <div
-              key={item.productId}
-              className="flex items-center justify-between border-b py-2 mb-4"
-            >
-              <div className="flex-1">
-                <h2 className="font-semibold">{item.title}</h2>
-                <p>Price: ${item.price}</p>
-              </div>
-              {/* Quantity Controls and Remove Button */}
-              <div className="flex items-center mr-80">
-                <div className="flex items-center space-x-7">
-                  <button
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity - 1)
-                    }
-                    className="px-2 py-1 bg-gray-200 rounded-md"
+    <>
+      <div className="flex flex-col w-full h-screen">
+        <div className="flex flex-grow overflow-hidden">
+          <div className=" min-w-[200px]">
+            <Sidebar />
+          </div>
+          <div className="w-2/3 p-4 mx-auto">
+            <h1 className="max-w-2xl mx-auto text-center font-bold text-2xl mb-10">
+              Your Cart
+            </h1>
+            {cartItems.length === 0 ? (
+              <p className="flex justify-center items-center h-full">
+                Your cart is empty.
+              </p>
+            ) : (
+              <div>
+                {cartItems.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between border-b py-2 mb-4 shadow-[0_3px_10px_rgb(0,0,0,0.2)] p-5 h-40"
                   >
-                    -
-                  </button>
-                  <span className="">{item.quantity}</span>
-                  <button
-                    onClick={() =>
-                      updateQuantity(item.productId, item.quantity + 1)
-                    }
-                    className="px-2 py-1 bg-gray-200 rounded-md"
-                  >
-                    +
-                  </button>
-                </div>
+                    <div className="flex flex-col w-80 overflow-hidden text-ellipsis">
+                      <h2 className="font-semibold">{item.title}</h2>
+                      <p className="flex">Price: ${item.price}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={(e) =>
+                          updateQuantity(
+                            e,
+                            item.productId,
+                            Math.max(1, item.quantity - 1)
+                          )
+                        }
+                        className="px-2 py-1 bg-gray-200 rounded-md"
+                      >
+                        -
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button
+                        onClick={(e) =>
+                          updateQuantity(e, item.productId, item.quantity + 1)
+                        }
+                        className="px-2 py-1 bg-gray-200 rounded-md"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        onClick={(e) => removeItem(e, item.productId)}
+                        className="px-2 py-1 bg-red-500 text-white rounded-md mr-10"
+                      >
+                        Remove
+                      </button>
+
+                      <button
+                        onClick={handleBuyNow}
+                        className="px-2 py-1 bg-green-500 text-white rounded-md"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="mr-10">
-                <button
-                  onClick={() => removeItem(item.productId)}
-                  className="px-2 py-1 bg-red-500 text-white rounded-md ml-10"
-                >
-                  Remove
-                </button>
-              </div>
-              <div className="item-center">
-                <button
-                  onClick={handleBuyNow}
-                  className="px-2 py-1 bg-green-500 text-white rounded-md"
-                >
-                  Buy Now
-                </button>
-              </div>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
