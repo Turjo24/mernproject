@@ -87,7 +87,7 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   };
 
   const handleProductClick = (productId) => {
-    if (isAuthenticated) {
+    if (isAuthenticated || !isAuthenticated) {
       navigate(`/details/${productId}`);
     } else {
       toast.error("Please log in to view product details.");
