@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import WebsiteLogo from "../assets/Logo.png";
-import { FaFilter } from "react-icons/fa";
+import { FaUser, FaHeart, FaShoppingBag } from "react-icons/fa";
 
 const Navbar = ({
   categories,
   isAuthenticated,
   onCategoryChange,
-  onSortOrderChange,
 }) => {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,19 +65,11 @@ const Navbar = ({
   const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
     setShowCategoryDropdown(false);
-    setShowFilters(false);
   };
 
   const toggleCategoryDropdown = () => {
     setShowCategoryDropdown(!showCategoryDropdown);
     setShowProfileDropdown(false);
-    setShowFilters(false);
-  };
-
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
-    setShowProfileDropdown(false);
-    setShowCategoryDropdown(false);
   };
 
   const handleCategoryClick = (category) => {
@@ -89,122 +77,113 @@ const Navbar = ({
     setShowCategoryDropdown(false);
   };
 
-  const handleCategoryChange = (e) => {
-    const category = e.target.value;
-    setSelectedCategory(category);
-    onCategoryChange(category);
-  };
-
-  const handleSortOrderChange = (e) => {
-    const order = e.target.value;
-    setSortOrder(order);
-    onSortOrderChange(order);
-  };
-
-  const navLinkStyle =
-    "nav-link text-sm font-bold text-neutral-600 hover:text-neutral-950 transition-colors duration-300";
-  const dropdownItemStyle =
-    "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-300";
+  const navLinkStyle = "text-sm font-medium text-gray-700 hover:text-pink-500 transition-colors duration-300";
+  const dropdownItemStyle = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-pink-500 transition-colors duration-300";
 
   return (
-    <div className="main">
-      <div className="px-5 py-2 flex justify-between items-center shadow-xl">
-        <div className="logo text-xl font-bold">
-          <img
-            src={WebsiteLogo}
-            alt="Website_Logo"
-            className="object-fit rounded-xl"
-            style={{ width: "100px", height: "50px" }}
-          />
-        </div>
-        <div className="nav-links flex space-x-7 font-semibold opacity-75">
-          <Link to="/" className={navLinkStyle}>
-            Home
-          </Link>
-          <div className="relative">
-            <button onClick={toggleCategoryDropdown} className={navLinkStyle}>
-              Category
-            </button>
-            {showCategoryDropdown && (
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => handleCategoryClick(cat)}
-                    className={dropdownItemStyle}
-                  >
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              onClick={toggleFilters}
-              className={`${navLinkStyle} flex items-center`}
-            >
-              <FaFilter className="mr-2" />
-              Filter
-            </button>
-            {showFilters && (
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                <select
-                  value={sortOrder}
-                  onChange={handleSortOrderChange}
-                  className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <option value="asc">Price: Low to High</option>
-                  <option value="desc">Price: High to Low</option>
-                </select>
-              </div>
-            )}
-          </div>
-          <Link to="#" className={navLinkStyle}>
-            Contact Us
-          </Link>
-          {loggedInUser ? (
-            <div className="relative">
-              <button onClick={toggleProfileDropdown} className={navLinkStyle}>
-                Profile
-              </button>
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                  <Link to="/Dashboard" className={dropdownItemStyle}>
-                    Dashboard
-                  </Link>
-                  {/* {userRole === "admin" ? (
-                    <Link to="/create" className={dropdownItemStyle}>
-                      Add New Product
-                    </Link>
-                  ) : (
-                    <>
-                      <Link to="/CartPage" className={dropdownItemStyle}></Link>
-                      <Link
-                        to="/your-orders"
-                        className={dropdownItemStyle}
-                      ></Link>
-                    </>
-                  )} */}
-                  <button onClick={handleLogout} className={dropdownItemStyle}>
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link to="/LogInPage" className={navLinkStyle}>
-              Log In
+    <nav className="bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0">
+              <img
+                src={WebsiteLogo}
+                alt="Website_Logo"
+                className="h-8 w-auto"
+              />
             </Link>
-          )}
+            <div className="hidden md:block ml-10">
+              <div className="flex items-baseline space-x-4">
+                <Link to="/" className={navLinkStyle}>
+                  Home
+                </Link>
+                <div className="relative">
+                  <button onClick={toggleCategoryDropdown} className={navLinkStyle}>
+                    Category
+                  </button>
+                  {showCategoryDropdown && (
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                      <button
+                        onClick={() => handleCategoryClick("men")}
+                        className={dropdownItemStyle}
+                      >
+                        Men
+                      </button>
+                      <button
+                        onClick={() => handleCategoryClick("women")}
+                        className={dropdownItemStyle}
+                      >
+                        Women
+                      </button>
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => handleCategoryClick(cat)}
+                          className={dropdownItemStyle}
+                        >
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Link to="#" className={navLinkStyle}>
+                  Contact Us
+                </Link>
+                <Link to="#" className={navLinkStyle}>
+                  About Us
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="hidden md:block">
+              <div className="ml-4 flex items-center md:ml-6">
+                <Link to="#" className={`${navLinkStyle} mx-3 flex items-center`}>
+                  <FaHeart className="mr-1" />
+                  Wishlist
+                </Link>
+                <Link to="CartPage" className={`${navLinkStyle} mx-3 flex items-center`}>
+                  <FaShoppingBag className="mr-1" />
+                  Bag
+                </Link>
+                {loggedInUser ? (
+                  <div className="relative ml-3">
+                    <button
+                      onClick={toggleProfileDropdown}
+                      className={`${navLinkStyle} flex items-center`}
+                    >
+                      <FaUser className="mr-1" />
+                      Profile
+                    </button>
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                        <Link to="/Dashboard" className={dropdownItemStyle}>
+                          Dashboard
+                        </Link>
+                        <button onClick={handleLogout} className={dropdownItemStyle}>
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link to="/LogInPage" className={`${navLinkStyle} ml-3 flex items-center`}>
+                    <FaUser className="mr-1" />
+                    Log In
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {notification && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white rounded shadow-lg px-6 py-3 transition-opacity duration-300">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-pink-500 text-white rounded-md shadow-lg px-6 py-3 transition-opacity duration-300">
           {notification}
         </div>
       )}
-    </div>
+    </nav>
   );
 };
 
