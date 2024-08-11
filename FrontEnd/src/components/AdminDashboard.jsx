@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ThreeDots } from "react-loader-spinner";
-import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
 
@@ -17,17 +17,17 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("jwtToken");
 
       if (!token) {
-        setError("No authentication token found");
+        setError("No authentication token found. Please log in again.");
         setLoading(false);
         return;
       }
 
       try {
         const [profileResponse, statsResponse] = await Promise.all([
-          axios.get("https://project-cse-2200-xi.vercel.app/api/admin/profile", {
+          axios.get("http://localhost:8080/api/admin/profile", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get("https://project-cse-2200-xi.vercel.app/api/admin/dashboard-stats", {
+          axios.get("http://localhost:8080/api/admin/dashboard-stats", {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -35,17 +35,17 @@ const AdminDashboard = () => {
         if (profileResponse.data.success) {
           setAdminData(profileResponse.data.admin);
         } else {
-          setError("Failed to fetch admin data");
+          throw new Error("Failed to fetch admin data");
         }
 
         if (statsResponse.data.success) {
           setDashboardStats(statsResponse.data.stats);
         } else {
-          setError("Failed to fetch dashboard stats");
+          throw new Error("Failed to fetch dashboard stats");
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError("Failed to fetch data: " + err.message);
+        setError(`Failed to fetch data: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -55,6 +55,7 @@ const AdminDashboard = () => {
   }, []);
 
   const getUsersChartData = () => {
+    if (!dashboardStats) return null;
     return {
       labels: ['Total Users'],
       datasets: [
@@ -68,17 +69,14 @@ const AdminDashboard = () => {
   };
 
   const getCartItemsChartData = () => {
+    if (!dashboardStats || !dashboardStats.topProducts) return null;
     return {
       labels: dashboardStats.topProducts.map(product => product.title),
       datasets: [
         {
           data: dashboardStats.topProducts.map(product => product.count),
           backgroundColor: [
-            '#FF6384',
-            '#36A2EB',
-            '#FFCE56',
-            '#4BC0C0',
-            '#9966FF',
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
           ],
         },
       ],
@@ -86,6 +84,7 @@ const AdminDashboard = () => {
   };
 
   const getOverviewChartData = () => {
+    if (!dashboardStats) return null;
     return {
       labels: ['Users', 'Cart Items', 'Products'],
       datasets: [
@@ -99,19 +98,20 @@ const AdminDashboard = () => {
     };
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <ThreeDots color="#00BFFF" height={80} width={80} />
       </div>
     );
+  }
 
   if (error) {
-    return <div className="text-red-600">{error}</div>;
+    return <div className="text-red-600 p-4">{error}</div>;
   }
 
   if (!adminData || !dashboardStats) {
-    return <div>No data available</div>;
+    return <div className="p-4">No data available. Please try refreshing the page.</div>;
   }
 
   return (
@@ -125,15 +125,27 @@ const AdminDashboard = () => {
         </div>
         <div className="shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md p-4">
           <h2 className="text-xl font-semibold mb-2">User Statistics</h2>
-          <Bar data={getUsersChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+          {getUsersChartData() && (
+            <div style={{ height: '300px' }}>
+              <Bar data={getUsersChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+            </div>
+          )}
         </div>
         <div className="shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md p-4">
           <h2 className="text-xl font-semibold mb-2">Top Products in Cart</h2>
-          <Pie data={getCartItemsChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+          {getCartItemsChartData() && (
+            <div style={{ height: '300px' }}>
+              <Pie data={getCartItemsChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+            </div>
+          )}
         </div>
         <div className="shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md p-4">
           <h2 className="text-xl font-semibold mb-2">Overview</h2>
-          <Line data={getOverviewChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+          {getOverviewChartData() && (
+            <div style={{ height: '300px' }}>
+              <Line data={getOverviewChartData()} options={{ responsive: true, maintainAspectRatio: false }} />
+            </div>
+          )}
         </div>
       </div>
     </div>
