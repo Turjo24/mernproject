@@ -73,9 +73,54 @@ const getAdminProfile = async (req, res) => {
     res.status(500).json({ message: "Internal server error", success: false });
   }
 };
+const getDashboardStats = async (req, res) => {
+  try {
+    const totalUsers = await UserModel.countDocuments();
+    const totalCartItems = await CartModel.countDocuments();
+    const totalProducts = await ProductModel.countDocuments();
+
+    // Get top 5 products in cart
+    const topProducts = await CartModel.aggregate([
+      { $group: { _id: "$productId", count: { $sum: "$quantity" } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productInfo"
+        }
+      },
+      { $unwind: "$productInfo" },
+      {
+        $project: {
+          _id: 1,
+          count: 1,
+          title: "$productInfo.title"
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalCartItems,
+        totalProducts,
+        topProducts
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({ message: "Internal server error", success: false });
+  }
+};
+
 
 module.exports = {
   getAllUsers,
   getAllCartItems,
-  getAdminProfile
+  getAdminProfile,
+  getDashboardStats
 };
