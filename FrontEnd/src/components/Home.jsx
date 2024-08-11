@@ -4,7 +4,7 @@ import { productContext } from "../utills/Context";
 import SearchBar from "./SearchBar";
 import Footer from "./Footer";
 import { ThreeDots } from "react-loader-spinner";
-import { FaHeart } from "react-icons/fa";
+import { FaHeart, FaFilter } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
@@ -13,6 +13,9 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [showFilters, setShowFilters] = useState(false);
   const { category } = useParams();
   const navigate = useNavigate();
 
@@ -21,20 +24,30 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
     const timer = setTimeout(() => {
       let filtered = products;
 
-      if (category || selectedCategory) {
-        const filterCategory = (category || selectedCategory)
-          .toLowerCase()
-          .trim();
+      // Filter by selected categories
+      if (selectedCategories.length > 0) {
+        filtered = filtered.filter((product) =>
+          selectedCategories.includes(product.category.toLowerCase().trim())
+        );
+      } else if (category || selectedCategory) {
+        const filterCategory = (category || selectedCategory).toLowerCase().trim();
         filtered = filtered.filter(
           (product) => product.category.toLowerCase().trim() === filterCategory
         );
       }
 
+      // Filter by search query
       if (searchQuery) {
         filtered = filtered.filter((product) =>
           product.title.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
+
+      // Filter by price range
+      filtered = filtered.filter(
+        (product) =>
+          product.price >= priceRange[0] && product.price <= priceRange[1]
+      );
 
       // Sort the filtered products based on the sortOrder
       filtered.sort((a, b) => {
@@ -47,10 +60,10 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
 
       setFilteredProducts(filtered);
       setIsLoading(false);
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [products, category, selectedCategory, searchQuery, sortOrder]);
+  }, [products, category, selectedCategory, searchQuery, sortOrder, selectedCategories, priceRange]);
 
   useEffect(() => {
     const storedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
@@ -59,6 +72,24 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
+  };
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handlePriceRangeChange = (event) => {
+    setPriceRange([priceRange[0], parseInt(event.target.value)]);
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCategories([]);
+    setPriceRange([0, 100000]);
+    setSearchQuery("");
   };
 
   const handleAddToFavorites = (product) => {
@@ -105,7 +136,53 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
               onChange={handleSearchChange}
               className="flex-grow max-w-xl py-2 px-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="ml-4 p-2 bg-pink-500 text-white rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500"
+            >
+              <FaFilter />
+            </button>
           </div>
+          {showFilters && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">Categories</h3>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <label key={category} className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      className="form-checkbox"
+                      checked={selectedCategories.includes(category.toLowerCase())}
+                      onChange={() => handleCategoryChange(category.toLowerCase())}
+                    />
+                    <span className="ml-2">{category}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Price Range</h3>
+                <input
+                  type="range"
+                  min="0"
+                  max="100000"
+                  step="1000"
+                  value={priceRange[1]}
+                  onChange={handlePriceRangeChange}
+                  className="w-full"
+                />
+                <div className="flex justify-between">
+                  <span>${priceRange[0]}</span>
+                  <span>${priceRange[1]}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleResetFilters}
+                className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Reset Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
