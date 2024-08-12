@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import { ThreeDots } from "react-loader-spinner";
 import { FaHeart, FaFilter } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
 
 function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   const [products] = useContext(productContext);
@@ -18,13 +19,14 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   const [showFilters, setShowFilters] = useState(false);
   const { category } = useParams();
   const navigate = useNavigate();
+  const [promotedProducts, setPromotedProducts] = useState([]);
+  const [currentPromotedIndex, setCurrentPromotedIndex] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       let filtered = products;
 
-      // Filter by selected categories
       if (selectedCategories.length > 0) {
         filtered = filtered.filter((product) =>
           selectedCategories.includes(product.category.toLowerCase().trim())
@@ -36,20 +38,17 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
         );
       }
 
-      // Filter by search query
       if (searchQuery) {
         filtered = filtered.filter((product) =>
           product.title.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
 
-      // Filter by price range
       filtered = filtered.filter(
         (product) =>
           product.price >= priceRange[0] && product.price <= priceRange[1]
       );
 
-      // Sort the filtered products based on the sortOrder
       filtered.sort((a, b) => {
         if (sortOrder === "asc") {
           return a.price - b.price;
@@ -60,10 +59,26 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
 
       setFilteredProducts(filtered);
       setIsLoading(false);
+
+      // Set multiple promoted products
+      if (filtered.length > 0) {
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        setPromotedProducts(shuffled.slice(0, 5)); // Get 5 random products for promotion
+      }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [products, category, selectedCategory, searchQuery, sortOrder, selectedCategories, priceRange]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPromotedIndex((prevIndex) =>
+        (prevIndex + 1) % promotedProducts.length
+      );
+    }, 2500); // Change promoted product every 2.5 seconds
+
+    return () => clearInterval(interval);
+  }, [promotedProducts]);
 
   useEffect(() => {
     const storedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
@@ -118,15 +133,11 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   };
 
   const handleProductClick = (productId) => {
-    if (isAuthenticated || !isAuthenticated) {
-      navigate(`/details/${productId}`);
-    } else {
-      toast.error("Please log in to view product details.");
-    }
+    navigate(`/details/${productId}`);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="bg-white shadow-md py-6">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
@@ -144,14 +155,14 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
             </button>
           </div>
           {showFilters && (
-            <div className="mt-4">
+            <div className="mt-4 bg-white p-4 rounded-lg shadow-md">
               <h3 className="text-lg font-semibold mb-2">Categories</h3>
               <div className="flex flex-wrap gap-2">
                 {categories.map((category) => (
                   <label key={category} className="inline-flex items-center">
                     <input
                       type="checkbox"
-                      className="form-checkbox"
+                      className="form-checkbox text-pink-500"
                       checked={selectedCategories.includes(category.toLowerCase())}
                       onChange={() => handleCategoryChange(category.toLowerCase())}
                     />
@@ -186,6 +197,45 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
         </div>
       </div>
 
+      <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-8 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold mb-4">Featured Product</h2>
+          <AnimatePresence mode="wait">
+            {promotedProducts.length > 0 && (
+              <motion.div
+                key={promotedProducts[currentPromotedIndex]._id}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.5 }}
+                className="flex items-center"
+              >
+                <img
+                  src={promotedProducts[currentPromotedIndex].image}
+                  alt={promotedProducts[currentPromotedIndex].title}
+                  className="w-64 h-64 object-cover rounded-lg shadow-lg mr-8"
+                  onClick={() => handleProductClick(promotedProducts[currentPromotedIndex]._id)}
+                />
+                <div>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    {promotedProducts[currentPromotedIndex].title}
+                  </h3>
+                  <p className="text-xl mb-4">
+                    ${promotedProducts[currentPromotedIndex].price.toFixed(2)}
+                  </p>
+                  <button
+                    onClick={() => handleProductClick(promotedProducts[currentPromotedIndex]._id)}
+                    className="bg-white text-pink-500 px-6 py-2 rounded-full font-semibold hover:bg-pink-100 transition-colors duration-300"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <ThreeDots
@@ -204,7 +254,7 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
               filteredProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                  className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105"
                 >
                   <div
                     className="w-full h-48 bg-cover bg-center cursor-pointer"
@@ -227,7 +277,7 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
                           isFavorite(product._id)
                             ? "text-pink-500"
                             : "text-gray-400"
-                        } hover:text-pink-500`}
+                        } hover:text-pink-500 transition-colors duration-300`}
                         onClick={() => handleAddToFavorites(product)}
                       >
                         <FaHeart />
