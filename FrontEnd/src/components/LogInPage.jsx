@@ -64,7 +64,7 @@ function LogInPage() {
         localStorage.setItem("userEmail", email);
         localStorage.setItem("userRole", role);
         localStorage.setItem("userId", userId);
-       
+
         window.dispatchEvent(new Event("storage"));
 
         setTimeout(() => {
@@ -118,7 +118,7 @@ function LogInPage() {
     <div className="max-w-400px mx-auto h-900px">
       <div className="h-full flex flex-col">
         <div className="w-full px-6 sm:px-10 lg:px-40 m-6 sm:m-10 flex justify-start items-center">
-          {/* Content of this div is missing */}
+          {/* Add any missing content here */}
         </div>
         <div className="flex p-6 flex-col sm:flex-row flex-grow items-center justify-center">
           <div className="w-full h-full sm:w-5/12 flex items-center justify-center rounded-xl shadow-2xl">
@@ -144,12 +144,12 @@ function LogInPage() {
                   <EmailAddress
                     name="email"
                     value={loginInfo.email}
-                    onChange={handleChange} // Pass handleChange here
+                    onChange={handleChange}
                   />
                   <Password
                     name="password"
                     value={loginInfo.password}
-                    onChange={handleChange} // Pass handleChange here
+                    onChange={handleChange}
                   />
                   <div className="text-right">
                     <a
