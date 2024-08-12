@@ -25,7 +25,12 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
-      let filtered = products;
+      if (!products || products.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      let filtered = [...products];
 
       if (selectedCategories.length > 0) {
         filtered = filtered.filter((product) =>
@@ -73,7 +78,7 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentPromotedIndex((prevIndex) =>
-        (prevIndex + 1) % promotedProducts.length
+        (prevIndex + 1) % (promotedProducts.length || 1)
       );
     }, 2500); // Change promoted product every 2.5 seconds
 
@@ -201,7 +206,7 @@ function Home({ categories, isAuthenticated, selectedCategory, sortOrder }) {
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold mb-4">Featured Product</h2>
           <AnimatePresence mode="wait">
-            {promotedProducts.length > 0 && (
+            {promotedProducts.length > 0 && promotedProducts[currentPromotedIndex] && (
               <motion.div
                 key={promotedProducts[currentPromotedIndex]._id}
                 initial={{ opacity: 0, y: 50 }}
