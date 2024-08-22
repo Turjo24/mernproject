@@ -95,33 +95,10 @@ const CartPage = () => {
     }
   };
 
-  const handleBuyNow = (e, item) => {
+  const handleBuyNow = (e) => {
     e.preventDefault();
-    navigate("/payment", { state: { items: [item], totalAmount: item.price * item.quantity } });
-  };
-
-  const handleBuyAll = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(
-        `https://project-cse-2200-xi.vercel.app/api/cart/buyall/${userId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to buy all items");
-      }
-      const data = await response.json();
-      const totalAmount = data.items.reduce((total, item) => total + item.price * item.quantity, 0);
-      navigate("/payment", { state: { items: data.items, totalAmount } });
-    } catch (error) {
-      console.error("Error buying all items:", error);
-      setError(error.message);
-    }
+    const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    navigate("/payment", { state: { items: cartItems, totalAmount } });
   };
 
   if (loading)
@@ -137,7 +114,7 @@ const CartPage = () => {
     <>
       <div className="flex flex-col w-full h-screen">
         <div className="flex flex-grow overflow-hidden">
-          <div className=" min-w-[200px]">
+          <div className="min-w-[200px]">
             <Sidebar />
           </div>
           <div className="w-2/3 p-4 mx-auto">
@@ -186,26 +163,19 @@ const CartPage = () => {
                     <div>
                       <button
                         onClick={(e) => removeItem(e, item.productId)}
-                        className="px-2 py-1 bg-red-500 text-white rounded-md mr-10"
+                        className="px-2 py-1 bg-red-500 text-white rounded-md"
                       >
                         Remove
-                      </button>
-
-                      <button
-                        onClick={(e) => handleBuyNow(e, item)}
-                        className="px-2 py-1 bg-green-500 text-white rounded-md"
-                      >
-                        Buy Now
                       </button>
                     </div>
                   </div>
                 ))}
                 <div className="flex justify-center mt-6">
                   <button
-                    onClick={handleBuyAll}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    onClick={handleBuyNow}
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
                   >
-                    Buy All Products
+                    Buy Now
                   </button>
                 </div>
               </div>
