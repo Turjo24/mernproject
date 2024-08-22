@@ -104,7 +104,7 @@ const CartPage = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `https://project-cse-2200.vercel.app/api/cart/buyall/${userId}`,
+        `https://project-cse-2200-ui-mu.vercel.app/api/cart/buyall/${userId}`,
         {
           method: 'POST',
           headers: {
