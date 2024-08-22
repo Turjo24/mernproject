@@ -137,4 +137,43 @@ router.delete('/remove', async (req, res) => {
   }
 });
 
+router.post('/buyall/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid userId' });
+    }
+
+    const cartItems = await CartItem.find({ userId }).populate('productId');
+
+    if (cartItems.length === 0) {
+      return res.status(404).json({ message: 'Cart is empty' });
+    }
+
+    // Here you would typically:
+    // 1. Create an order in your database
+    // 2. Update inventory
+    // 3. Clear the user's cart
+    // 4. Handle payment processing (or prepare for it)
+
+    // For this example, we'll just clear the cart
+    await CartItem.deleteMany({ userId });
+
+    res.status(200).json({ 
+      message: 'All items purchased successfully',
+      items: cartItems.map(item => ({
+        productId: item.productId._id,
+        title: item.productId.title,
+        price: item.productId.price,
+        quantity: item.quantity
+      }))
+    });
+  } catch (error) {
+    console.error('Error processing buy all:', error);
+    res.status(500).json({ message: 'Failed to process purchase', error: error.message });
+  }
+});
+
+
 module.exports = router;

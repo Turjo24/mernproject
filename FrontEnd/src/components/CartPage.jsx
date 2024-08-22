@@ -95,9 +95,33 @@ const CartPage = () => {
     }
   };
 
-  const handleBuyNow = (e) => {
+  const handleBuyNow = (e, item) => {
     e.preventDefault();
-    navigate("/payment");
+    navigate("/payment", { state: { items: [item], totalAmount: item.price * item.quantity } });
+  };
+
+  const handleBuyAll = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(
+        `https://project-cse-2200.vercel.app/api/cart/buyall/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to buy all items");
+      }
+      const data = await response.json();
+      const totalAmount = data.items.reduce((total, item) => total + item.price * item.quantity, 0);
+      navigate("/payment", { state: { items: data.items, totalAmount } });
+    } catch (error) {
+      console.error("Error buying all items:", error);
+      setError(error.message);
+    }
   };
 
   if (loading)
@@ -168,7 +192,7 @@ const CartPage = () => {
                       </button>
 
                       <button
-                        onClick={handleBuyNow}
+                        onClick={(e) => handleBuyNow(e, item)}
                         className="px-2 py-1 bg-green-500 text-white rounded-md"
                       >
                         Buy Now
@@ -176,6 +200,14 @@ const CartPage = () => {
                     </div>
                   </div>
                 ))}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={handleBuyAll}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Buy All Products
+                  </button>
+                </div>
               </div>
             )}
           </div>
