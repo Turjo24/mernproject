@@ -116,11 +116,45 @@ const getDashboardStats = async (req, res) => {
     res.status(500).json({ message: "Internal server error", success: false });
   }
 };
+const updateUser = async (req, res) => {
+  const userId = req.params.id;
+  const { name, email, role } = req.body;
+  
+  try {
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, { name, email, role }, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+    res.status(200).json({ message: "User updated successfully", success: true, user: updatedUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message, success: false });
+  }
+};
+
+// Delete a user by ID
+const deleteUser = async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const deletedUser = await UserModel.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+    res.status(200).json({ message: "User deleted successfully", success: true });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message, success: false });
+  }
+};
+
 
 
 module.exports = {
   getAllUsers,
   getAllCartItems,
   getAdminProfile,
-  getDashboardStats
+  getDashboardStats,
+  updateUser,
+  deleteUser
 };

@@ -5,7 +5,8 @@ const AllUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
-
+  const [editedUser, setEditedUser] = useState({});
+  
   const API_BASE_URL = "https://project-cse-2200.vercel.app/api/admin";
 
   useEffect(() => {
@@ -28,8 +29,6 @@ const AllUsers = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched data:", data);
-
       if (data.success && Array.isArray(data.users)) {
         setUsers(data.users);
       } else {
@@ -44,33 +43,32 @@ const AllUsers = () => {
 
   const handleEdit = (id) => {
     setEditingId(id);
+    const userToEdit = users.find(user => user._id === id);
+    setEditedUser(userToEdit);  // Set the user to edit
   };
 
   const handleSave = async (id) => {
-    const userToSave = users.find(user => user._id === id);
-    const token = localStorage.getItem("accessToken");
-
+    const token = localStorage.getItem("jwtToken");
     try {
-      // Adjust this URL and method as needed
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-        method: "PUT", // or "PATCH" if your API uses PATCH for updates
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(userToSave)
+        body: JSON.stringify(editedUser)  // Send the edited user details
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save user");
+        throw new Error("Failed to update user");
       }
 
       const data = await response.json();
       if (data.success) {
-        setUsers(users.map(user => user._id === id ? userToSave : user));
-        setEditingId(null);
+        setUsers(users.map(user => user._id === id ? data.user : user));  // Update user in state
+        setEditingId(null);  // Exit edit mode
       } else {
-        throw new Error(data.message || "Failed to save user");
+        throw new Error("Failed to save user");
       }
     } catch (error) {
       setError(error.message);
@@ -78,9 +76,8 @@ const AllUsers = () => {
   };
 
   const handleDelete = async (id) => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("jwtToken");
     try {
-      // Adjust this URL as needed
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
         method: "DELETE",
         headers: {
@@ -95,9 +92,7 @@ const AllUsers = () => {
 
       const data = await response.json();
       if (data.success) {
-        setUsers(users.filter(user => user._id !== id));
-      } else {
-        throw new Error(data.message || "Failed to delete user");
+        setUsers(users.filter(user => user._id !== id));  // Remove user from state
       }
     } catch (error) {
       setError(error.message);
@@ -132,13 +127,8 @@ const AllUsers = () => {
                     {editingId === user._id ? (
                       <input
                         type="text"
-                        value={user.name}
-                        onChange={(e) => {
-                          const updatedUsers = users.map(u => 
-                            u._id === user._id ? { ...u, name: e.target.value } : u
-                          );
-                          setUsers(updatedUsers);
-                        }}
+                        value={editedUser.name || user.name}
+                        onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
                         className="w-full px-2 py-1 border rounded"
                       />
                     ) : (
@@ -150,13 +140,8 @@ const AllUsers = () => {
                     {editingId === user._id ? (
                       <input
                         type="text"
-                        value={user.role}
-                        onChange={(e) => {
-                          const updatedUsers = users.map(u => 
-                            u._id === user._id ? { ...u, role: e.target.value } : u
-                          );
-                          setUsers(updatedUsers);
-                        }}
+                        value={editedUser.role || user.role}
+                        onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value })}
                         className="w-full px-2 py-1 border rounded"
                       />
                     ) : (
@@ -165,24 +150,15 @@ const AllUsers = () => {
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap">
                     {editingId === user._id ? (
-                      <button
-                        onClick={() => handleSave(user._id)}
-                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded mr-2"
-                      >
+                      <button onClick={() => handleSave(user._id)} className="bg-green-500 text-white px-4 py-1 rounded">
                         Save
                       </button>
                     ) : (
-                      <button
-                        onClick={() => handleEdit(user._id)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded mr-2"
-                      >
+                      <button onClick={() => handleEdit(user._id)} className="bg-blue-500 text-white px-4 py-1 rounded">
                         Edit
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(user._id)}
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded"
-                    >
+                    <button onClick={() => handleDelete(user._id)} className="bg-red-500 text-white px-4 py-1 rounded ml-2">
                       Delete
                     </button>
                   </td>
@@ -192,7 +168,7 @@ const AllUsers = () => {
           </table>
         </div>
       ) : (
-        <p className="text-center py-4">No users found.</p>
+        <div className="text-center py-4">No users found.</div>
       )}
     </div>
   );
