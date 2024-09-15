@@ -7,7 +7,7 @@ const AllUsers = () => {
   const [editingId, setEditingId] = useState(null);
   const [editedUser, setEditedUser] = useState({});
   
-  const API_BASE_URL = "https://project-cse-2200.vercel.app/api/admin";
+  const API_BASE_URL = "https://project-cse-2200-xi.vercel.app/api/admin";
 
   useEffect(() => {
     fetchUsers();
