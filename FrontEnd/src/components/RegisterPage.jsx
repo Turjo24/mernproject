@@ -14,13 +14,13 @@ function RegisterPage() {
     password: "",
   });
   const [registerSuccess, setRegisterSuccess] = useState(false);
-  const [isBiometricSupported, setIsBiometricSupported] = useState(null); // null = loading
+  const [isBiometricSupported, setIsBiometricSupported] = useState(null);
   const [enableBiometric, setEnableBiometric] = useState(false);
   const [isRegisteringBiometric, setIsRegisteringBiometric] = useState(false);
 
   const navigate = useNavigate();
 
-  // ✅ Check biometric support when component mounts
+  // ✅ Check biometric support
   useEffect(() => {
     const checkBiometricSupport = async () => {
       try {
@@ -28,10 +28,8 @@ function RegisterPage() {
           window.PublicKeyCredential &&
           (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
         ) {
-          console.log("✅ Biometric is supported");
           setIsBiometricSupported(true);
         } else {
-          console.log("❌ Biometric not supported");
           setIsBiometricSupported(false);
         }
       } catch (error) {
@@ -51,7 +49,11 @@ function RegisterPage() {
     }));
   };
 
-  // ✅ Generate Biometric Credential
+  // ✅ Convert ArrayBuffer to Base64
+  const toBase64 = (buffer) =>
+    btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+  // ✅ Generate Biometric Credential (Full WebAuthn Object)
   const generateBiometricCredential = async (email) => {
     try {
       const challenge = new Uint8Array(32);
@@ -80,10 +82,15 @@ function RegisterPage() {
         },
       });
 
-      const credentialId = btoa(
-        String.fromCharCode(...new Uint8Array(credential.rawId))
-      );
-      return credentialId;
+      return {
+        id: credential.id,
+        rawId: toBase64(credential.rawId),
+        type: credential.type,
+        response: {
+          attestationObject: toBase64(credential.response.attestationObject),
+          clientDataJSON: toBase64(credential.response.clientDataJSON),
+        },
+      };
     } catch (error) {
       console.error("Biometric registration failed:", error);
       throw error;
@@ -108,7 +115,7 @@ function RegisterPage() {
           biometricData = await generateBiometricCredential(email);
         } catch (biometricError) {
           handleError(
-            "Biometric registration failed, continuing with regular signup..."
+            "Biometric registration failed, continuing with normal signup..."
           );
         }
       }
@@ -214,7 +221,7 @@ function RegisterPage() {
                     onChange={handleChange}
                   />
 
-                  {/* ✅ Biometric Option with Fingerprint Image */}
+                  {/* ✅ Biometric Option */}
                   {isBiometricSupported === null && (
                     <p className="text-gray-500 text-sm">
                       Checking biometric support...
