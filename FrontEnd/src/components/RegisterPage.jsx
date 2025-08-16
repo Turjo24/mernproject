@@ -14,13 +14,13 @@ function RegisterPage() {
     password: "",
   });
   const [registerSuccess, setRegisterSuccess] = useState(false);
-  const [isBiometricSupported, setIsBiometricSupported] = useState(null); // null = loading state
+  const [isBiometricSupported, setIsBiometricSupported] = useState(null); // null = loading
   const [enableBiometric, setEnableBiometric] = useState(false);
   const [isRegisteringBiometric, setIsRegisteringBiometric] = useState(false);
 
   const navigate = useNavigate();
 
-  // ✅ Check biometric support on mount
+  // ✅ Check biometric support when component mounts
   useEffect(() => {
     const checkBiometricSupport = async () => {
       try {
@@ -28,10 +28,10 @@ function RegisterPage() {
           window.PublicKeyCredential &&
           (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
         ) {
-          console.log("✅ Biometric is supported on this device");
+          console.log("✅ Biometric is supported");
           setIsBiometricSupported(true);
         } else {
-          console.log("❌ Biometric is NOT supported on this device");
+          console.log("❌ Biometric not supported");
           setIsBiometricSupported(false);
         }
       } catch (error) {
@@ -51,6 +51,7 @@ function RegisterPage() {
     }));
   };
 
+  // ✅ Generate Biometric Credential
   const generateBiometricCredential = async (email) => {
     try {
       const challenge = new Uint8Array(32);
@@ -100,6 +101,7 @@ function RegisterPage() {
       setIsRegisteringBiometric(true);
       let biometricData = null;
 
+      // ✅ Biometric Registration if enabled
       if (enableBiometric && isBiometricSupported) {
         try {
           handleSuccess("Please complete biometric registration...");
@@ -111,7 +113,7 @@ function RegisterPage() {
         }
       }
 
-      const url = "https://project-cse-2200-xi.vercel.app/auth/signup";
+      const url = "https://project-cse-2200.vercel.app/auth/signup";
       console.log("Sending request to:", url);
 
       const requestBody = {
@@ -170,7 +172,7 @@ function RegisterPage() {
     <div className="max-w-400px mx-auto h-900px">
       <div className="h-full flex flex-col">
         <div className="w-full px-6 sm:px-10 lg:px-40 m-6 sm:m-10 flex justify-start items-center">
-          {/* Content here */}
+          {/* Header or Logo */}
         </div>
         <div className="flex p-6 flex-col sm:flex-row flex-grow items-center justify-center">
           <div className="w-full h-full sm:w-5/12 flex items-center justify-center rounded-xl shadow-2xl">
@@ -212,12 +214,14 @@ function RegisterPage() {
                     onChange={handleChange}
                   />
 
-                  {/* ✅ Biometric Option */}
+                  {/* ✅ Biometric Option with Fingerprint Image */}
                   {isBiometricSupported === null && (
-                    <p className="text-gray-500 text-sm">Checking biometric support...</p>
+                    <p className="text-gray-500 text-sm">
+                      Checking biometric support...
+                    </p>
                   )}
                   {isBiometricSupported && (
-                    <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all duration-300">
                       <input
                         type="checkbox"
                         id="enableBiometric"
@@ -229,21 +233,27 @@ function RegisterPage() {
                         htmlFor="enableBiometric"
                         className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer"
                       >
-                        <span>🔐</span>
+                        <img
+                          src="https://cdn-icons-png.flaticon.com/512/1049/1049877.png"
+                          alt="Fingerprint"
+                          className="w-6 h-6 animate-pulse"
+                        />
                         <span>Enable Biometric Login (Fingerprint/Face ID)</span>
                       </label>
                     </div>
                   )}
                   {isBiometricSupported === false && (
                     <p className="text-red-500 text-sm">
-                      Biometric login not supported on this device.
+                      Biometric login not supported on this device/browser.
                     </p>
                   )}
 
                   <div className="mt-8 sm:mt-10 flex justify-center">
                     <AnimatedButton
                       initialText={
-                        isRegisteringBiometric ? "Setting up Biometric..." : "Register"
+                        isRegisteringBiometric
+                          ? "Setting up Biometric..."
+                          : "Register"
                       }
                       successText="Registration Successful"
                       onClick={handleRegister}
