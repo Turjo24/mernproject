@@ -21,8 +21,35 @@ const UserSchema = new Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
-    refreshToken: String
+biometricEnabled: {
+    type: Boolean,
+    default: false
+  },
+  biometricHash: {
+    type: String,
+    default: null
+  },
+  biometricRegisteredAt: {
+    type: Date,
+    default: null
+  },
+    
+refreshToken: String,
+
+}, {
+  timestamps: true
 });
 
+
+
+UserSchema.pre('save', function(next) {
+  if (this.isModified('biometricHash') && this.biometricHash && !this.biometricRegisteredAt) {
+    this.biometricRegisteredAt = new Date();
+  }
+  if (!this.biometricHash) {
+    this.biometricRegisteredAt = null;
+  }
+  next();
+});
 const UserModel = mongoose.model('users', UserSchema);
 module.exports = UserModel;

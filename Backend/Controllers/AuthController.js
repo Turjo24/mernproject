@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const UserModel = require("../Models/user");
+const crypto = require('crypto');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -25,17 +26,39 @@ const generateTokens = (user) => {
   return { accessToken, refreshToken, jwtToken };
 };
 
-// Signup function
+// Helper function to hash biometric data
+const hashBiometricData = (biometricData) => {
+  return crypto.createHash('sha256').update(biometricData).digest('hex');
+};
+
+// Signup function with optional biometric
 const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, biometricData } = req.body;
     const user = await UserModel.findOne({ email });
     if (user) {
       return res.status(409).json({ message: 'User already exists, you can login', success: false });
     }
+    
     const hashedPassword = await bcrypt.hash(password, 10);
-    const role = email === ADMIN_EMAIL ? 'admin' : 'user'; // Only check the email for signup
-    const userModel = new UserModel({ name, email, password: hashedPassword, role });
+    const role = email === ADMIN_EMAIL ? 'admin' : 'user';
+    
+    // Create user object
+    const userData = { 
+      name, 
+      email, 
+      password: hashedPassword, 
+      role,
+      biometricEnabled: false 
+    };
+    
+    // If biometric data is provided, hash and store it
+    if (biometricData) {
+      userData.biometricHash = hashBiometricData(biometricData);
+      userData.biometricEnabled = true;
+    }
+    
+    const userModel = new UserModel(userData);
 
     const { accessToken, refreshToken, jwtToken } = generateTokens(userModel);
     userModel.refreshToken = refreshToken;
@@ -50,7 +73,8 @@ const signup = async (req, res) => {
       name: userModel.name,
       email: userModel.email,
       role: userModel.role,
-      userId: userModel._id.toString() // Include userId in the response
+      userId: userModel._id.toString(),
+      biometricEnabled: userModel.biometricEnabled
     });
   } catch (err) {
     console.error("Signup error:", err);
@@ -61,7 +85,7 @@ const signup = async (req, res) => {
   }
 };
 
-// Login function
+// Regular login function
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -75,7 +99,8 @@ const login = async (req, res) => {
           email: ADMIN_EMAIL,
           role: 'admin',
           name: 'Admin User',
-          password: await bcrypt.hash(ADMIN_PASSWORD, 10)
+          password: await bcrypt.hash(ADMIN_PASSWORD, 10),
+          biometricEnabled: false
         });
       } else {
         return res.status(403).json({ message: errorMsg, success: false });
@@ -100,7 +125,8 @@ const login = async (req, res) => {
       email,
       name: user.name,
       role: user.role,
-      userId: user._id.toString() // Ensure userId is included and converted to string
+      userId: user._id.toString(),
+      biometricEnabled: user.biometricEnabled || false
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -110,7 +136,173 @@ const login = async (req, res) => {
     });
   }
 };
-// Refresh token function
+
+// Biometric login function
+const biometricLogin = async (req, res) => {
+  try {
+    const { email, biometricData } = req.body;
+    
+    if (!email || !biometricData) {
+      return res.status(400).json({ 
+        message: 'Email and biometric data are required', 
+        success: false 
+      });
+    }
+    
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(403).json({ 
+        message: 'User not found', 
+        success: false 
+      });
+    }
+    
+    if (!user.biometricEnabled || !user.biometricHash) {
+      return res.status(403).json({ 
+        message: 'Biometric authentication not enabled for this user', 
+        success: false 
+      });
+    }
+    
+    // Compare biometric data
+    const providedHash = hashBiometricData(biometricData);
+    if (providedHash !== user.biometricHash) {
+      return res.status(403).json({ 
+        message: 'Biometric authentication failed', 
+        success: false 
+      });
+    }
+
+    const { accessToken, refreshToken, jwtToken } = generateTokens(user);
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.status(200).json({
+      message: "Biometric Login Success",
+      success: true,
+      accessToken,
+      refreshToken,
+      jwtToken,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      userId: user._id.toString(),
+      biometricEnabled: true
+    });
+  } catch (err) {
+    console.error("Biometric login error:", err);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};
+
+// Add biometric to existing user
+const addBiometric = async (req, res) => {
+  try {
+    const { userId, biometricData } = req.body;
+    
+    if (!userId || !biometricData) {
+      return res.status(400).json({ 
+        message: 'User ID and biometric data are required', 
+        success: false 
+      });
+    }
+    
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found', 
+        success: false 
+      });
+    }
+    
+    user.biometricHash = hashBiometricData(biometricData);
+    user.biometricEnabled = true;
+    await user.save();
+    
+    res.status(200).json({
+      message: "Biometric added successfully",
+      success: true,
+      biometricEnabled: true
+    });
+  } catch (err) {
+    console.error("Add biometric error:", err);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};
+
+// Remove biometric from user
+const removeBiometric = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        message: 'User ID is required', 
+        success: false 
+      });
+    }
+    
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found', 
+        success: false 
+      });
+    }
+    
+    user.biometricHash = undefined;
+    user.biometricEnabled = false;
+    await user.save();
+    
+    res.status(200).json({
+      message: "Biometric removed successfully",
+      success: true,
+      biometricEnabled: false
+    });
+  } catch (err) {
+    console.error("Remove biometric error:", err);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};
+
+// Check if user has biometric enabled
+const checkBiometricStatus = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found', 
+        success: false 
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      biometricEnabled: user.biometricEnabled || false,
+      email: user.email,
+      name: user.name
+    });
+  } catch (err) {
+    console.error("Check biometric status error:", err);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};
+
+// Refresh token function (unchanged)
 const refreshToken = async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) {
@@ -134,7 +326,7 @@ const refreshToken = async (req, res) => {
       accessToken,
       refreshToken: newRefreshToken,
       jwtToken,
-      userId: user._id // Include userId in the response
+      userId: user._id
     });
   } catch (error) {
     console.error("Refresh token error:", error);
@@ -142,7 +334,7 @@ const refreshToken = async (req, res) => {
   }
 };
 
-// Logout function
+// Logout function (unchanged)
 const logout = async (req, res) => {
   const { refreshToken } = req.body;
   try {
@@ -161,6 +353,10 @@ const logout = async (req, res) => {
 module.exports = {
   signup,
   login,
+  biometricLogin,
+  addBiometric,
+  removeBiometric,
+  checkBiometricStatus,
   refreshToken,
   logout
 };

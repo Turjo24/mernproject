@@ -1,5 +1,4 @@
-// RegisterPage.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,8 +14,34 @@ function RegisterPage() {
     password: "",
   });
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(null); // null = loading state
+  const [enableBiometric, setEnableBiometric] = useState(false);
+  const [isRegisteringBiometric, setIsRegisteringBiometric] = useState(false);
 
   const navigate = useNavigate();
+
+  // ✅ Check biometric support on mount
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      try {
+        if (
+          window.PublicKeyCredential &&
+          (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
+        ) {
+          console.log("✅ Biometric is supported on this device");
+          setIsBiometricSupported(true);
+        } else {
+          console.log("❌ Biometric is NOT supported on this device");
+          setIsBiometricSupported(false);
+        }
+      } catch (error) {
+        console.error("Error checking biometric support:", error);
+        setIsBiometricSupported(false);
+      }
+    };
+
+    checkBiometricSupport();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,21 +51,80 @@ function RegisterPage() {
     }));
   };
 
+  const generateBiometricCredential = async (email) => {
+    try {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: {
+            name: "Your App Name",
+            id: window.location.hostname,
+          },
+          user: {
+            id: new TextEncoder().encode(email),
+            name: email,
+            displayName: registerInfo.name || email,
+          },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            userVerification: "required",
+            requireResidentKey: false,
+          },
+          timeout: 60000,
+          attestation: "direct",
+        },
+      });
+
+      const credentialId = btoa(
+        String.fromCharCode(...new Uint8Array(credential.rawId))
+      );
+      return credentialId;
+    } catch (error) {
+      console.error("Biometric registration failed:", error);
+      throw error;
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     const { name, email, password } = registerInfo;
     if (!name || !email || !password) {
       return handleError("All fields are required");
     }
+
     try {
-      const url = "https://project-cse-2200.vercel.app/auth/signup";
+      setIsRegisteringBiometric(true);
+      let biometricData = null;
+
+      if (enableBiometric && isBiometricSupported) {
+        try {
+          handleSuccess("Please complete biometric registration...");
+          biometricData = await generateBiometricCredential(email);
+        } catch (biometricError) {
+          handleError(
+            "Biometric registration failed, continuing with regular signup..."
+          );
+        }
+      }
+
+      const url = "https://project-cse-2200-xi.vercel.app/auth/signup";
       console.log("Sending request to:", url);
+
+      const requestBody = {
+        ...registerInfo,
+        ...(biometricData && { biometricData }),
+      };
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(registerInfo),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -50,10 +134,13 @@ function RegisterPage() {
       const result = await response.json();
       console.log("Full server response:", result);
 
-      const { success, message, error } = result;
+      const { success, message, error, biometricEnabled } = result;
       if (success) {
         setRegisterSuccess(true);
-        handleSuccess("Registration successful!");
+        const successMsg = biometricEnabled
+          ? "Registration successful with biometric!"
+          : "Registration successful!";
+        handleSuccess(successMsg);
         setTimeout(() => {
           navigate("/LogInPage");
         }, 3000);
@@ -66,31 +153,17 @@ function RegisterPage() {
     } catch (err) {
       handleError(err.message);
       console.error("Fetch error:", err);
+    } finally {
+      setIsRegisteringBiometric(false);
     }
   };
 
   const handleSuccess = (message) => {
-    toast.success(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    });
+    toast.success(message, { position: "top-right", autoClose: 3000 });
   };
 
   const handleError = (message) => {
-    toast.error(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    });
+    toast.error(message, { position: "top-right", autoClose: 3000 });
   };
 
   return (
@@ -138,12 +211,44 @@ function RegisterPage() {
                     value={registerInfo.password}
                     onChange={handleChange}
                   />
+
+                  {/* ✅ Biometric Option */}
+                  {isBiometricSupported === null && (
+                    <p className="text-gray-500 text-sm">Checking biometric support...</p>
+                  )}
+                  {isBiometricSupported && (
+                    <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <input
+                        type="checkbox"
+                        id="enableBiometric"
+                        checked={enableBiometric}
+                        onChange={(e) => setEnableBiometric(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="enableBiometric"
+                        className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer"
+                      >
+                        <span>🔐</span>
+                        <span>Enable Biometric Login (Fingerprint/Face ID)</span>
+                      </label>
+                    </div>
+                  )}
+                  {isBiometricSupported === false && (
+                    <p className="text-red-500 text-sm">
+                      Biometric login not supported on this device.
+                    </p>
+                  )}
+
                   <div className="mt-8 sm:mt-10 flex justify-center">
                     <AnimatedButton
-                      initialText="Register"
+                      initialText={
+                        isRegisteringBiometric ? "Setting up Biometric..." : "Register"
+                      }
                       successText="Registration Successful"
                       onClick={handleRegister}
                       isSuccess={registerSuccess}
+                      disabled={isRegisteringBiometric}
                     />
                   </div>
                 </form>
