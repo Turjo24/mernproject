@@ -20,6 +20,9 @@ function RegisterPage() {
 
   const navigate = useNavigate();
 
+  // ✅ BASE URL - এটা তোমার actual backend URL দিবি
+  const API_BASE_URL = "https://project-cse-2200-xi.vercel.app";
+
   // ✅ Check biometric support
   useEffect(() => {
     const checkBiometricSupport = async () => {
@@ -53,7 +56,7 @@ function RegisterPage() {
   const toBase64 = (buffer) =>
     btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-  // ✅ Generate Biometric Credential (Full WebAuthn Object)
+  // ✅ Generate Biometric Credential - Fixed করেছি
   const generateBiometricCredential = async (email) => {
     try {
       const challenge = new Uint8Array(32);
@@ -82,6 +85,7 @@ function RegisterPage() {
         },
       });
 
+      // ✅ এই format backend expect করে
       return {
         id: credential.id,
         rawId: toBase64(credential.rawId),
@@ -100,6 +104,7 @@ function RegisterPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
     const { name, email, password } = registerInfo;
+    
     if (!name || !email || !password) {
       return handleError("All fields are required");
     }
@@ -113,20 +118,25 @@ function RegisterPage() {
         try {
           handleSuccess("Please complete biometric registration...");
           biometricData = await generateBiometricCredential(email);
+          console.log("Generated biometric credential:", biometricData);
         } catch (biometricError) {
-          handleError(
-            "Biometric registration failed, continuing with normal signup..."
-          );
+          console.error("Biometric error:", biometricError);
+          handleError("Biometric registration failed, continuing with normal signup...");
         }
       }
 
-      const url = "https://project-cse-2200-xi.vercel.app/auth/signup";
-      console.log("Sending request to:", url);
+      // ✅ API Call - সঠিক URL এবং data format
+      const url = `${API_BASE_URL}/auth/signup`;
+      console.log("Sending signup request to:", url);
 
       const requestBody = {
-        ...registerInfo,
-        ...(biometricData && { biometricData }),
+        name,
+        email,
+        password,
+        ...(biometricData && { biometricData })
       };
+
+      console.log("Request body:", requestBody);
 
       const response = await fetch(url, {
         method: "POST",
@@ -136,7 +146,11 @@ function RegisterPage() {
         body: JSON.stringify(requestBody),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error response:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -144,35 +158,51 @@ function RegisterPage() {
       console.log("Full server response:", result);
 
       const { success, message, error, biometricEnabled } = result;
+      
       if (success) {
         setRegisterSuccess(true);
         const successMsg = biometricEnabled
-          ? "Registration successful with biometric!"
-          : "Registration successful!";
+          ? "Registration successful with biometric! 🎉"
+          : "Registration successful! 🎉";
         handleSuccess(successMsg);
+        
         setTimeout(() => {
           navigate("/LogInPage");
         }, 3000);
       } else if (error) {
-        const details = error?.details[0]?.message;
+        const details = error?.details?.[0]?.message || error.message || message;
         handleError(details);
-      } else if (!success) {
-        handleError(message);
+      } else {
+        handleError(message || "Registration failed");
       }
     } catch (err) {
-      handleError(err.message);
-      console.error("Fetch error:", err);
+      console.error("Registration error:", err);
+      handleError(`Registration failed: ${err.message}`);
     } finally {
       setIsRegisteringBiometric(false);
     }
   };
 
   const handleSuccess = (message) => {
-    toast.success(message, { position: "top-right", autoClose: 3000 });
+    toast.success(message, { 
+      position: "top-right", 
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   const handleError = (message) => {
-    toast.error(message, { position: "top-right", autoClose: 3000 });
+    toast.error(message, { 
+      position: "top-right", 
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   return (
@@ -209,6 +239,7 @@ function RegisterPage() {
                     onChange={handleChange}
                     placeholder="Full Name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
                   />
                   <EmailAddress
                     name="email"
@@ -224,9 +255,10 @@ function RegisterPage() {
                   {/* ✅ Biometric Option */}
                   {isBiometricSupported === null && (
                     <p className="text-gray-500 text-sm">
-                      Checking biometric support...
+                      🔍 Checking biometric support...
                     </p>
                   )}
+                  
                   {isBiometricSupported && (
                     <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all duration-300">
                       <input
@@ -240,19 +272,18 @@ function RegisterPage() {
                         htmlFor="enableBiometric"
                         className="flex items-center space-x-2 text-sm font-medium text-gray-700 cursor-pointer"
                       >
-                        <img
-                          src="https://cdn-icons-png.flaticon.com/512/1049/1049877.png"
-                          alt="Fingerprint"
-                          className="w-6 h-6 animate-pulse"
-                        />
+                        <span className="text-xl">🔐</span>
                         <span>Enable Biometric Login (Fingerprint/Face ID)</span>
                       </label>
                     </div>
                   )}
+                  
                   {isBiometricSupported === false && (
-                    <p className="text-red-500 text-sm">
-                      Biometric login not supported on this device/browser.
-                    </p>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800 text-sm">
+                        ⚠️ Biometric login not supported on this device/browser.
+                      </p>
+                    </div>
                   )}
 
                   <div className="mt-8 sm:mt-10 flex justify-center">
@@ -262,7 +293,7 @@ function RegisterPage() {
                           ? "Setting up Biometric..."
                           : "Register"
                       }
-                      successText="Registration Successful"
+                      successText="Registration Successful!"
                       onClick={handleRegister}
                       isSuccess={registerSuccess}
                       disabled={isRegisteringBiometric}
@@ -275,7 +306,7 @@ function RegisterPage() {
                   Already have an account?
                 </h3>
                 <a
-                  href="/login"
+                  href="/LogInPage"
                   className="mt-2 sm:mt-0 text-xs sm:text-sm font-bold text-indigo-400 hover:text-indigo-700"
                 >
                   Log in

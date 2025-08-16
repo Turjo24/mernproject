@@ -19,6 +19,9 @@ function LogInPage() {
   const [isBiometricLogin, setIsBiometricLogin] = useState(false);
   const navigate = useNavigate();
 
+  // ✅ BASE URL - একই URL সব জায়গায় ব্যবহার করো
+  const API_BASE_URL = "https://project-cse-2200-xi.vercel.app";
+
   // Check biometric support when component mounts
   React.useEffect(() => {
     checkBiometricSupport();
@@ -34,28 +37,50 @@ function LogInPage() {
   }, [loginInfo.email]);
 
   const checkBiometricSupport = async () => {
-    if (window.PublicKeyCredential && 
-        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
-      setIsBiometricSupported(true);
+    try {
+      if (window.PublicKeyCredential && 
+          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
+        setIsBiometricSupported(true);
+      }
+    } catch (error) {
+      console.error("Error checking biometric support:", error);
     }
   };
 
   const checkUserBiometricStatus = async (email) => {
     try {
       setIsCheckingBiometric(true);
-      const response = await fetch(`https://project-cse-2200.vercel.app/auth/biometric-status/${email}`);
+      
+      // ✅ সঠিক URL - তোমার backend route অনুযায়ী
+      const url = `${API_BASE_URL}/auth/biometric-status/${email}`;
+      console.log("Checking biometric status at:", url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log("Biometric status response:", response.status);
+
       if (response.ok) {
         const result = await response.json();
-        setUserHasBiometric(result.biometricEnabled);
+        console.log("Biometric status result:", result);
+        setUserHasBiometric(result.biometricEnabled || false);
+      } else {
+        console.log("User not found or no biometric");
+        setUserHasBiometric(false);
       }
     } catch (error) {
       console.error("Error checking biometric status:", error);
+      setUserHasBiometric(false);
     } finally {
       setIsCheckingBiometric(false);
     }
   };
 
-  const authenticateWithBiometric = async (email) => {
+  const authenticateWithBiometric = async () => {
     try {
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
@@ -65,12 +90,12 @@ function LogInPage() {
           challenge: challenge,
           timeout: 60000,
           userVerification: "required",
+          // Don't specify allowCredentials to allow any registered credential
         },
       });
 
-      // Convert credential ID to base64 string
-      const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-      return credentialId;
+      // ✅ Return just the credential ID - backend এ এইটাই store থাকে
+      return credential.id;
     } catch (error) {
       console.error("Biometric authentication failed:", error);
       throw error;
@@ -86,9 +111,12 @@ function LogInPage() {
       setIsBiometricLogin(true);
       handleSuccess("Please authenticate with your biometric...");
       
-      const biometricData = await authenticateWithBiometric(loginInfo.email);
+      const biometricCredentialId = await authenticateWithBiometric();
       
-      const url = "https://project-cse-2200.vercel.app/auth/biometric-login";
+      // ✅ Biometric login API call
+      const url = `${API_BASE_URL}/auth/biometric-login`;
+      console.log("Biometric login request to:", url);
+      
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -96,11 +124,15 @@ function LogInPage() {
         },
         body: JSON.stringify({
           email: loginInfo.email,
-          biometricData: biometricData,
+          biometricData: biometricCredentialId, // Send credential ID
         }),
       });
 
+      console.log("Biometric login response status:", response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Biometric login error response:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -120,7 +152,7 @@ function LogInPage() {
 
       if (success) {
         setLoginSuccess(true);
-        handleSuccess("Biometric login successful!");
+        handleSuccess("Biometric login successful! 🎉");
         
         // Store tokens and user info
         localStorage.setItem("accessToken", accessToken);
@@ -140,8 +172,8 @@ function LogInPage() {
         handleError(message || "Biometric login failed");
       }
     } catch (error) {
-      handleError("Biometric authentication failed. Please try regular login.");
       console.error("Biometric login error:", error);
+      handleError("Biometric authentication failed. Please try regular login.");
     } finally {
       setIsBiometricLogin(false);
     }
@@ -150,12 +182,16 @@ function LogInPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     const { email, password } = loginInfo;
+    
     if (!email || !password) {
       return handleError("Email and password are required");
     }
+    
     try {
-      const url = "https://project-cse-2200-xi.vercel.app/auth/login";
-      console.log("Sending request to:", url);
+      // ✅ Regular login API call
+      const url = `${API_BASE_URL}/auth/login`;
+      console.log("Regular login request to:", url);
+      
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -164,12 +200,16 @@ function LogInPage() {
         body: JSON.stringify(loginInfo),
       });
 
+      console.log("Login response status:", response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Login error response:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("Full server response:", result);
+      console.log("Login response:", result);
 
       const {
         success,
@@ -182,13 +222,12 @@ function LogInPage() {
         error,
         userId,
       } = result;
+      
       if (success) {
         setLoginSuccess(true);
-        handleSuccess("Login successful!");
-        console.log("Access Token:", accessToken);
-        console.log("Refresh Token:", refreshToken);
-        console.log("JWT Token:", jwtToken);
-        console.log("User ID:", userId);
+        handleSuccess("Login successful! 🎉");
+        
+        // Store all tokens and user info
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
         localStorage.setItem("jwtToken", jwtToken);
@@ -201,16 +240,16 @@ function LogInPage() {
 
         setTimeout(() => {
           navigate(role === "admin" ? "/Home" : "/Home");
-        }, 3000);
+        }, 2000);
       } else if (error) {
-        const details = error?.details[0]?.message;
+        const details = error?.details?.[0]?.message || error.message || message;
         handleError(details);
-      } else if (!success) {
-        handleError(message);
+      } else {
+        handleError(message || "Login failed");
       }
     } catch (err) {
-      handleError(err.message);
-      console.error("Fetch error:", err);
+      console.error("Login error:", err);
+      handleError(`Login failed: ${err.message}`);
     }
   };
 
@@ -229,7 +268,7 @@ function LogInPage() {
   const handleError = (message) => {
     toast.error(message, {
       position: "top-right",
-      autoClose: 3000,
+      autoClose: 5000,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -250,7 +289,7 @@ function LogInPage() {
     <div className="max-w-400px mx-auto h-900px">
       <div className="h-full flex flex-col">
         <div className="w-full px-6 sm:px-10 lg:px-40 m-6 sm:m-10 flex justify-start items-center">
-          {/* Add any missing content here */}
+          {/* Header content */}
         </div>
         <div className="flex p-6 flex-col sm:flex-row flex-grow items-center justify-center">
           <div className="w-full h-full sm:w-5/12 flex items-center justify-center rounded-xl shadow-2xl">
@@ -281,13 +320,22 @@ function LogInPage() {
                   
                   {/* Show biometric status */}
                   {loginInfo.email && isBiometricSupported && (
-                    <div className="text-sm">
+                    <div className="text-sm p-3 rounded-lg border">
                       {isCheckingBiometric ? (
-                        <span className="text-gray-500">🔍 Checking biometric status...</span>
+                        <div className="flex items-center space-x-2 text-gray-500">
+                          <span className="animate-spin">🔍</span>
+                          <span>Checking biometric status...</span>
+                        </div>
                       ) : userHasBiometric ? (
-                        <span className="text-green-600">✅ Biometric login available</span>
+                        <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-2 rounded">
+                          <span>✅</span>
+                          <span>Biometric login available</span>
+                        </div>
                       ) : (
-                        <span className="text-gray-500">🔐 No biometric registered</span>
+                        <div className="flex items-center space-x-2 text-gray-500 bg-gray-50 p-2 rounded">
+                          <span>🔐</span>
+                          <span>No biometric registered</span>
+                        </div>
                       )}
                     </div>
                   )}
@@ -316,8 +364,10 @@ function LogInPage() {
                         disabled={isBiometricLogin}
                         className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-lg shadow-md transition duration-200 flex items-center justify-center space-x-2"
                       >
-                        <span>🔐</span>
-                        <span>{isBiometricLogin ? "Authenticating..." : "Login with Biometric"}</span>
+                        <span className="text-xl">🔐</span>
+                        <span>
+                          {isBiometricLogin ? "Authenticating..." : "Login with Biometric"}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -326,7 +376,7 @@ function LogInPage() {
                   {isBiometricSupported && userHasBiometric && (
                     <div className="flex items-center justify-center space-x-4">
                       <div className="flex-1 border-t border-gray-300"></div>
-                      <span className="text-gray-500 text-sm">OR</span>
+                      <span className="text-gray-500 text-sm font-medium">OR</span>
                       <div className="flex-1 border-t border-gray-300"></div>
                     </div>
                   )}
@@ -334,7 +384,7 @@ function LogInPage() {
                   <div className="mt-8 sm:mt-10 flex justify-center">
                     <AnimatedButton
                       initialText="Log In"
-                      successText="Login Successful"
+                      successText="Login Successful!"
                       onClick={handleLogin}
                       isSuccess={loginSuccess}
                     />
