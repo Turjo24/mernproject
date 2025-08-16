@@ -113,7 +113,7 @@ function RegisterPage() {
         }
       }
 
-      const url = "https://project-cse-2200.vercel.app/auth/signup";
+      const url = "https://project-cse-2200-xi.vercel.app/auth/signup";
       console.log("Sending request to:", url);
 
       const requestBody = {
